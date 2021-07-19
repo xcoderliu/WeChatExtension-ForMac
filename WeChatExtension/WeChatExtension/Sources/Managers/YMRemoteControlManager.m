@@ -7,7 +7,7 @@
 //
 
 #import "YMRemoteControlManager.h"
-#import "TKWeChatPluginConfig.h"
+#import "YMWeChatPluginConfig.h"
 #import "TKRemoteControlModel.h"
 #import "YMMessageManager.h"
 
@@ -25,8 +25,14 @@ static NSString * const kRemoteControlAppleScript = @"osascript /Applications/We
 {
     NSString *currentUserName = [objc_getClass("CUtility") GetCurrentUserName];
     NSString *callBack = [NSString stringWithFormat:@"%@\n\n\n%@", YMLocalizedString(@"assistant.remoteControl.voiceRecall"), msg];
-    MessageService *service = [[objc_getClass("MMServiceCenter") defaultCenter] getService:objc_getClass("MessageService")];
-    [service SendTextMessage:currentUserName toUsrName:currentUserName msgText:callBack atUserList:nil];
+    
+    if (LargerOrEqualVersion(@"3.0.2")) {
+        FFProcessReqsvrZZ *service = [[objc_getClass("MMServiceCenter") defaultCenter] getService:objc_getClass("FFProcessReqsvrZZ")];
+        [service FFProcessTReqZZ:currentUserName toUsrName:currentUserName msgText:callBack atUserList:nil];
+    } else {
+        MessageService *service = [[objc_getClass("MMServiceCenter") defaultCenter] getService:objc_getClass("MessageService")];
+        [service SendTextMessage:currentUserName toUsrName:currentUserName msgText:callBack atUserList:nil];
+    }
     
     [self executeRemoteControlCommandWithMsg:msg msgType:MessageDataTypeVoice];
 }
@@ -38,7 +44,7 @@ static NSString * const kRemoteControlAppleScript = @"osascript /Applications/We
 
 + (void)executeRemoteControlCommandWithMsg:(NSString *)msg msgType:(MessageDataType)type
 {
-    NSArray *remoteControlModels = [TKWeChatPluginConfig sharedConfig].remoteControlModels;
+    NSArray *remoteControlModels = [YMWeChatPluginConfig sharedConfig].remoteControlModels;
     [remoteControlModels enumerateObjectsUsingBlock:^(NSArray *subModels, NSUInteger index, BOOL * _Nonnull stop) {
         [subModels enumerateObjectsUsingBlock:^(TKRemoteControlModel *model, NSUInteger idx, BOOL * _Nonnull subStop) {
             if ([self shouldExecuteRemoteControlWithModel:model msg:msg msgType:type]) {
@@ -125,7 +131,7 @@ static NSString * const kRemoteControlAppleScript = @"osascript /Applications/We
 + (void)executePluginCommand:(NSString *)cmd
 {
     NSString *callBack = @"";
-    TKWeChatPluginConfig *config = [TKWeChatPluginConfig sharedConfig];
+    YMWeChatPluginConfig *config = [YMWeChatPluginConfig sharedConfig];
     if ([cmd isEqualToString:@"getDirectiveList"]) {
         callBack = [YMRemoteControlManager remoteControlCommandsString];
     } else if ([cmd isEqualToString:@"AutoReplySwitch"]) {
@@ -140,6 +146,10 @@ static NSString * const kRemoteControlAppleScript = @"osascript /Applications/We
         NSString *status = config.autoAuthEnable ? YMLocalizedString(@"Assistant.Directive.SwitchOff") : YMLocalizedString(@"Assistant.Directive.SwitchOn");
         callBack = [NSString stringWithFormat:@"%@-%@",YMLocalizedString(@"Assistant.Directive.AutoAuthSwitch"),status];
         [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFY_AUTO_AUTH_CHANGE object:nil];
+    // } else if ([cmd isEqualToString:@"AutoForwardingSwitch"]) {
+    //     NSString *status = config.autoForwardingEnable ? YMLocalizedString(@"Assistant.Directive.SwitchOff") : YMLocalizedString(@"Assistant.Directive.SwitchOn");
+    //     callBack = [NSString stringWithFormat:@"%@-%@",YMLocalizedString(@"Assistant.Directive.AutoForwardingSwitch"),status];
+    //     [[NSNotificationCenter defaultCenter] postNotificationName:NOTIFY_AUTO_FORWARDING_CHANGE object:nil];
     }
     
     [[YMMessageManager shareManager] sendTextMessageToSelf:callBack];
@@ -149,7 +159,7 @@ static NSString * const kRemoteControlAppleScript = @"osascript /Applications/We
 {
     NSMutableString *replyContent = [NSMutableString stringWithString:YMLocalizedString(@"assistant.remoteControl.listTip")];
     
-    NSArray *remoteControlModels = [TKWeChatPluginConfig sharedConfig].remoteControlModels;
+    NSArray *remoteControlModels = [YMWeChatPluginConfig sharedConfig].remoteControlModels;
     [remoteControlModels enumerateObjectsUsingBlock:^(NSArray *subModels, NSUInteger index, BOOL * _Nonnull stop) {
         switch (index) {
             case 0:
